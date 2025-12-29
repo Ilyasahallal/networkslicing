@@ -3,15 +3,21 @@ from mininet.node import RemoteController, OVSSwitch
 from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 from mininet.link import TCLink
+import subprocess
+import time
 
 
 class FiveGCoreTopology:
     def __init__(self):
+        # Clean up any existing Mininet network
+        self.cleanup()
+        
         self.net = Mininet(
             controller=RemoteController,
             switch=OVSSwitch,
             link=TCLink,
-            autoSetMacs=True
+            autoSetMacs=True,
+            cleanup=True  # Ensure cleanup on exit
         )
 
         self.ctrl = self.net.addController(
@@ -20,6 +26,12 @@ class FiveGCoreTopology:
             ip='127.0.0.1',
             port=6633
         )
+
+    def cleanup(self):
+        """Clean up any existing network namespaces and processes"""
+        info('*** Cleaning up any existing network\n')
+        subprocess.run(['sudo', 'mn', '-c'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(1)
 
     def create_topology(self):
         info('*** Adding 5G Core Functions\n')
@@ -93,6 +105,8 @@ class FiveGCoreTopology:
         self.start()
         CLI(self.net)
         self.net.stop()
+        # Clean up after stopping
+        self.cleanup()
 
 
 def main():
